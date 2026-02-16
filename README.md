@@ -80,5 +80,34 @@ Here is how an author could implement a common horizontal carousel:
 ### Future considerations (out of scope for this initial proposal)
 
 1.  **Implicit targeting:** A mechanism for a command invoker to automatically target its "nearest ancestor scroll container" if the `commandfor` attribute is omitted.
-2.  **Automatic disabled state:** A mechanism for the button to automatically reflect the state of the scroller (e.g., the "next" button becoming `disabled` when at the end of the scroller).
-3.  **More functionality:** More commands (e.g. scroll-to-top) + value-based scrolling.
+2.  **More functionality:** More commands (e.g. scroll-to-top) + value-based scrolling.
+
+### Accessibility & keyboard interaction
+
+This proposal standardizes declarative scrolling by moving state management from custom scripts to the browser engine. To ensure these buttons are accessible by default, the following behaviors are required:
+
+#### Implicit semantic mapping
+
+The commandfor attribute creates a direct relationship between the button and its scroll container, which the browser must expose to Assistive Technology (AT):
+
+* Implicit aria-controls: The browser maps commandfor="ID" to the aria-controls relationship.
+* Contextual labeling: If the target container has an accessible name (e.g., aria-label="Document Preview"), the browser should propagate this to the button’s announcement. For example, a page-inline-end command would be announced as "Next page, Document Preview, button."
+* Announcement Priority:
+   * If a button has a custom aria-label, the browser should use that label as the primary identifier.
+   * If no custom label exists, the browser generates a name combining the command action and the target container's name (e.g., "Next page, Document Preview, button").
+
+#### State management and styling
+
+One of the primary benefits of this declarative approach is automatic state synchronization.
+
+* Boundary detection: The browser should automatically manage the aria-disabled state. When a scroller cannot be moved further in the associated direction, the corresponding button is marked aria-disabled="true".
+* Focus preservation: The use of aria-disabled is required over the HTML disabled attribute to ensure the button remains in the Tab order. If the button were strictly disabled via the HTML attribute, a keyboard user would lose their focus point upon reaching the end of the scrollable region, causing the focus to reset to the top of the document.
+* Styling via attribute selectors: Authors can style these states using attribute selectors (e.g., button[aria-disabled="true"]) to provide visual parity with the :disabled pseudo-class while maintaining accessibility.
+
+#### Internationalization & writing modes
+
+Logical commands (page-inline-start, page-block-end, etc.) ensure that scrolling directions automatically adapt to the document's writing mode. In a Right-to-Left (RTL) context, page-inline-end will correctly scroll to the left, ensuring that "Next" remains semantically and functionally accurate without requiring manual direction logic from the author.
+
+#### Handling multi-axis scrolling
+
+In complex interfaces where a single container supports both horizontal and vertical scrolling, the AT announcement must distinguish between axes to prevent user confusion. When multiple scroll commands target the same commandfor ID, the browser should include the axis in the announcement.A page-inline-end button would be announced as "Next page, horizontal, [Container Name], button."A page-block-end button would be announced as "Next page, vertical, [Container Name], button."
